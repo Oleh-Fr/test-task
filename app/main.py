@@ -40,46 +40,38 @@ async def create_lot(lot: LotCreate, db: AsyncSession = Depends(get_db)):
 @app.post("/lots/{lot_id}/bids")
 async def place_bid(lot_id: int, bid: BidCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
-
     lot = result.scalar_one_or_none()
-
     if not lot:
-        raise HTTPException(status_code=404, detail="Lot not found")
-
+        raise HTTPException(404, "Lot not found")
     if lot.status == "ended":
-        raise HTTPException(status_code=400, detail="Auction ended")
-
+        raise HTTPException(400, "Auction ended")
     if bid.amount <= lot.current_price:
-        raise HTTPException(status_code=400, detail="Bid too low")
+        raise HTTPException(400, "Bid too low")
 
-    # Update price
+    # Update lot and add bid in same transaction
     lot.current_price = bid.amount
-
-    new_bid = Bid(
-        lot_id=lot_id,
-        bidder=bid.bidder,
-        amount=bid.amount
-    )
-
+    new_bid = Bid(lot_id=lot_id, bidder=bid.bidder, amount=bid.amount)
     db.add(new_bid)
-    await db.commit()
-    
-    if (lot.end_time - datetime.now()).total_seconds() < 30:
+
+    if (lot.end_time - datetime.utcnow()).total_seconds() < 30:
         lot.end_time += timedelta(seconds=30)
+
+    await db.commit()
+    await db.refresh(lot)
+
+    # Broadcast updates
+    try:
         await manager.broadcast(lot_id, {
-            "type": "time_extended",
+            "type": "bid_placed",
             "lot_id": lot_id,
-            "new_end_time": lot.end_time.strftime("%d %B %Y, %H:%M:%S")
+            "bidder": bid.bidder,
+            "amount": bid.amount,
+            "new_end_time": lot.end_time.isoformat()
         })
+    except Exception:
+        pass  # Avoid crashing if a client disconnects
 
-    await manager.broadcast(lot_id, {
-        "type": "bid_placed",
-        "lot_id": lot_id,
-        "bidder": bid.bidder,
-        "amount": bid.amount
-    })
-
-    return {"message": "Bid placed"}
+    return {"message": "Bid placed", "current_price": lot.current_price, "end_time": lot.end_time.isoformat()}
 
 
 @app.websocket("/ws/lots/{lot_id}")
