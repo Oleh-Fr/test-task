@@ -10,7 +10,7 @@ class Lot(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     start_price = Column(Numeric(10, 2), nullable=False)
-    current_price = Column(Float, nullable=False)
+    current_price = Column(Numeric(10, 2), nullable=False)
     status = Column(String, default="running")
     end_time = Column(DateTime)
 
@@ -23,7 +23,7 @@ class Bid(Base):
     id = Column(Integer, primary_key=True)
     lot_id = Column(Integer, ForeignKey("lots.id"))
     bidder = Column(String)
-    amount = Column(Float)
+    amount = Column(Numeric(10, 2))
     created_at = Column(DateTime, default=datetime.now)
 
     lot = relationship("Lot", back_populates="bids")

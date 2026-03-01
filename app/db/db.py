@@ -50,7 +50,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     task = asyncio.create_task(check_expired_lots())
     print("✅ App started")
 
-
     yield
 
     task.cancel()
