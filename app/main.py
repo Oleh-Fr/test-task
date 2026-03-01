@@ -39,7 +39,8 @@ async def create_lot(lot: LotCreate, db: AsyncSession = Depends(get_db)):
 
 @app.post("/lots/{lot_id}/bids")
 async def place_bid(lot_id: int, bid: BidCreate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Lot).where(Lot.id == lot_id))
+    result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
+
     lot = result.scalar_one_or_none()
 
     if not lot:
@@ -86,7 +87,6 @@ async def websocket_endpoint(websocket: WebSocket, lot_id: int):
     await manager.connect(lot_id, websocket)
     try:
         while True:
-            # await websocket.receive_text()
-            await asyncio.sleep(1)
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(lot_id, websocket)

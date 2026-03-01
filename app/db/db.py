@@ -25,7 +25,7 @@ async def check_expired_lots():
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(Lot).where(Lot.status == "running")
-            )
+            ).select_for_update()
             lots = result.scalars().all()
 
             now = datetime.now()

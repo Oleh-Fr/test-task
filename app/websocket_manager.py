@@ -13,8 +13,14 @@ class ConnectionManager:
         self.active_connections[lot_id].remove(websocket)
 
     async def broadcast(self, lot_id: int, message: dict):
+        dead_connections = []
         for connection in self.active_connections[lot_id]:
-            await connection.send_json(message)
+            try:
+                await connection.send_json(message)
+            except Exception:
+                dead_connections.append(connection)
+        for conn in dead_connections:
+            self.active_connections[lot_id].remove(conn)
 
 
 manager = ConnectionManager()
