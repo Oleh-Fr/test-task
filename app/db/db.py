@@ -22,19 +22,22 @@ AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 async def check_expired_lots():
     while True:
-        async with AsyncSessionLocal() as session:
-            result = await session.execute(
-                select(Lot).where(Lot.status == "running")
-            ).select_for_update()
-            lots = result.scalars().all()
+        try:
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    select(Lot).where(Lot.status == "running").with_for_update()
+                )
+                lots = result.scalars().all()
 
-            now = datetime.now()
+                now = datetime.now()
 
-            for lot in lots:
-                if lot.end_time <= now:
-                    lot.status = "ended"
+                for lot in lots:
+                    if lot.end_time <= now:
+                        lot.status = "ended"
 
-            await session.commit()
+                await session.commit()
+        except Exception as e:
+            print(f"Error in check_expired_lots: {e}")
 
         await asyncio.sleep(1)
 
