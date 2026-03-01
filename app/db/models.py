@@ -24,6 +24,6 @@ class Bid(Base):
     lot_id = Column(Integer, ForeignKey("lots.id"))
     bidder = Column(String)
     amount = Column(Float)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
 
     lot = relationship("Lot", back_populates="bids")

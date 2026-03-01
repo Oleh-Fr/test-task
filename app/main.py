@@ -53,7 +53,7 @@ async def place_bid(lot_id: int, bid: BidCreate, db: AsyncSession = Depends(get_
     new_bid = Bid(lot_id=lot_id, bidder=bid.bidder, amount=bid.amount)
     db.add(new_bid)
 
-    if (lot.end_time - datetime.utcnow()).total_seconds() < 30:
+    if (lot.end_time - datetime.now()).total_seconds() < 30:
         lot.end_time += timedelta(seconds=30)
 
     await db.commit()
