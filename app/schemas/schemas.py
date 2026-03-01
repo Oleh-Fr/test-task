@@ -1,12 +1,27 @@
-from enum import Enum
+from pydantic import BaseModel, field_serializer
+from datetime import datetime
 
-from pydantic import BaseModel
+class LotCreate(BaseModel):
+    title: str
+    start_price: float
+    duration_seconds: int
 
 
-class Status(str, Enum):
-    running = "running"
-    ended = "ended"
+class BidCreate(BaseModel):
+    bidder: str
+    amount: float
 
 
-class CreateLot(BaseModel):
-    price: float
+class LotOut(BaseModel):
+    id: int
+    title: str
+    current_price: float
+    status: str
+    end_time: datetime
+
+    @field_serializer("end_time")
+    def format_end_time(self, value: datetime):
+        return value.strftime("%d %B %Y, %H:%M:%S")
+
+    class Config:
+        from_attributes = True
