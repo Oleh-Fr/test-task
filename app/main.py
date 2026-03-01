@@ -55,14 +55,6 @@ async def place_bid(lot_id: int, bid: BidCreate, db: AsyncSession = Depends(get_
     # Update price
     lot.current_price = bid.amount
 
-    if (lot.end_time - datetime.now()).total_seconds() < 30:
-        lot.end_time += timedelta(seconds=30)
-        await manager.broadcast(lot_id, {
-            "type": "time_extended",
-            "lot_id": lot_id,
-            "new_end_time": lot.end_time.strftime("%d %B %Y, %H:%M:%S")
-        })
-
     new_bid = Bid(
         lot_id=lot_id,
         bidder=bid.bidder,
@@ -71,6 +63,14 @@ async def place_bid(lot_id: int, bid: BidCreate, db: AsyncSession = Depends(get_
 
     db.add(new_bid)
     await db.commit()
+    
+    if (lot.end_time - datetime.now()).total_seconds() < 30:
+        lot.end_time += timedelta(seconds=30)
+        await manager.broadcast(lot_id, {
+            "type": "time_extended",
+            "lot_id": lot_id,
+            "new_end_time": lot.end_time.strftime("%d %B %Y, %H:%M:%S")
+        })
 
     await manager.broadcast(lot_id, {
         "type": "bid_placed",

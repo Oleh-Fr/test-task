@@ -25,7 +25,7 @@ async def check_expired_lots():
         try:
             async with AsyncSessionLocal() as session:
                 result = await session.execute(
-                    select(Lot).where(Lot.status == "running").with_for_update()
+                    select(Lot).where(Lot.status == "running", Lot.end_time <= datetime.now()).with_for_update()
                 )
                 lots = result.scalars().all()
 
@@ -47,12 +47,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    asyncio.create_task(check_expired_lots())
+    task = asyncio.create_task(check_expired_lots())
     print("✅ App started")
 
 
     yield
 
+    task.cancel()
     # SHUTDOWN
     print("🛑 App stopped")
 
