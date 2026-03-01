@@ -1,15 +1,15 @@
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, Field
 from datetime import datetime
 
 class LotCreate(BaseModel):
     title: str
-    start_price: float
-    duration_seconds: int
+    start_price: float = Field(gt=0)
+    duration_seconds: int = Field(gt=0)
 
 
 class BidCreate(BaseModel):
     bidder: str
-    amount: float
+    amount: float = Field(gt=0)
 
 
 class LotOut(BaseModel):

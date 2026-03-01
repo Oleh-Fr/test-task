@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -41,10 +39,16 @@ async def create_lot(lot: LotCreate, db: AsyncSession = Depends(get_db)):
 async def place_bid(lot_id: int, bid: BidCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
     lot = result.scalar_one_or_none()
+
     if not lot:
         raise HTTPException(404, "Lot not found")
-    if lot.status == "ended":
+
+    if lot.status != "running":
+        raise HTTPException(400, "Auction is not running")
+
+    if lot.end_time <= datetime.now():
         raise HTTPException(400, "Auction ended")
+
     if bid.amount <= lot.current_price:
         raise HTTPException(400, "Bid too low")
 
